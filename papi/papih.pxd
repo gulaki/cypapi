@@ -55,9 +55,46 @@ cdef extern from 'papi.h':
 
     const PAPI_component_info_t *PAPI_get_component_info(int cidx)
 
+    int PAPI_num_cmp_hwctrs(int cidx)
+    cdef int PAPI_PRESET_MASK
+    cdef int PAPI_PRESET_ENUM_AVAIL
+    cdef int PAPI_PRESET_ENUM_MSC
+    cdef int PAPI_PRESET_ENUM_INS
+    cdef int PAPI_PRESET_ENUM_IDL
+    cdef int PAPI_PRESET_ENUM_BR
+    cdef int PAPI_PRESET_ENUM_CND
+    cdef int PAPI_PRESET_ENUM_MEM
+    cdef int PAPI_PRESET_ENUM_CACH
+    cdef int PAPI_PRESET_ENUM_L1
+    cdef int PAPI_PRESET_ENUM_L2
+    cdef int PAPI_PRESET_ENUM_L3
+    cdef int PAPI_PRESET_ENUM_TLB
+    cdef int PAPI_PRESET_ENUM_FP
+    int PAPI_enum_event(int *EventCode, int modifier)
     int PAPI_enum_cmp_event(int *EventCode, int modifier, int cidx)
     int PAPI_event_code_to_name(int EventCode, char *out)
     int PAPI_event_name_to_code(const char *in_, int *out)
+
+    ctypedef struct PAPI_event_info_t:
+        unsigned int event_code;
+        char* symbol;
+        char* short_descr;
+        char* long_descr;
+        int component_index;
+        char* units;
+        int location;
+        int data_type;
+        int value_type;
+        int timescope;
+        int update_type;
+        int update_freq;
+        # PRESET SPECIFIC FIELDS FOLLOW
+        unsigned int count;
+        unsigned int event_type;
+        char* derived;
+        char* postfix;
+
+    int PAPI_get_event_info(int EventCode, PAPI_event_info_t * info)
 
     cdef int PAPI_NULL
     int PAPI_create_eventset(int *EventSet)

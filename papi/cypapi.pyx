@@ -79,6 +79,66 @@ class PyPAPI_get_component_info:
     def __str__(self):
         return str(self.__dict__)
 
+cdef class PyPAPI_enum_preset_events:
+    cdef int ntv_code
+    cdef int modifier
+    cdef int umod
+
+    def __cinit__(self, str modifier=None):
+        self.modifier = PAPI_ENUM_FIRST
+        modifier = 'all' if modifier is None else modifier.lower()
+        if modifier == 'all':
+            self.umod = PAPI_ENUM_EVENTS
+        elif modifier == 'avail':
+            self.umod = PAPI_PRESET_ENUM_AVAIL
+        elif modifier == 'msc':
+            self.umod = PAPI_PRESET_ENUM_MSC
+        elif modifier == 'ins':
+            self.umod = PAPI_PRESET_ENUM_INS
+        elif modifier == 'idl':
+            self.umod = PAPI_PRESET_ENUM_IDL
+        elif modifier == 'br':
+            self.umod = PAPI_PRESET_ENUM_BR
+        elif modifier == 'cnd':
+            self.umod = PAPI_PRESET_ENUM_CND
+        elif modifier == 'mem':
+            self.umod = PAPI_PRESET_ENUM_MEM
+        elif modifier == 'cach':
+            self.umod = PAPI_PRESET_ENUM_CACH
+        elif modifier == 'l1':
+            self.umod = PAPI_PRESET_ENUM_L1
+        elif modifier == 'l2':
+            self.umod = PAPI_PRESET_ENUM_L2
+        elif modifier == 'l3':
+            self.umod = PAPI_PRESET_ENUM_L3
+        elif modifier == 'tlb':
+            self.umod = PAPI_PRESET_ENUM_TLB
+        elif modifier == 'fp':
+            self.umod = PAPI_PRESET_ENUM_FP
+        else:
+            raise Exception(f'cyPAPI Error: Invalid option "{modifier}" for preset enumeration')
+        self.ntv_code = 0 | PAPI_PRESET_MASK
+        self.next_event()
+
+    def next_event(self):
+        cdef int papi_errno
+        if self.modifier == PAPI_ENUM_FIRST:
+            papi_errno = PAPI_enum_event(&self.ntv_code, PAPI_ENUM_FIRST)
+            if papi_errno != PAPI_OK:
+                raise Exception(f'PAPI Error {papi_errno}: Failed to enumerate preset event')
+            self.modifier = self.umod
+            return self.ntv_code
+        papi_errno = PAPI_enum_event(&self.ntv_code, self.umod);
+        if papi_errno != PAPI_OK:
+                raise StopIteration
+        return self.ntv_code
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next_event()
+
 cdef class PyPAPI_enum_component_events:
     cdef int ntv_code
     cdef int cidx
@@ -109,6 +169,9 @@ cdef class PyPAPI_enum_component_events:
     def __next__(self):
         return self.next_event()
 
+def pyPAPI_num_cmp_hwctrs(int cidx):
+    return PAPI_num_cmp_hwctrs(cidx)
+
 def pyPAPI_event_code_to_name(int event_code):
     cdef char out[1024]
     cdef int papi_errno = PAPI_event_code_to_name(event_code, out)
@@ -126,6 +189,14 @@ def pyPAPI_event_name_to_code(str eventname):
     if papi_errno != PAPI_OK:
         raise Exception(f'PAPI Error {papi_errno}: Failed to get event code')
     return out
+
+def pyPAPI_event_code_to_descr(int event_code):
+    cdef PAPI_event_info_t info;
+    cdef int papi_errno;
+    papi_errno = PAPI_get_event_info(event_code, &info)
+    if papi_errno != PAPI_OK:
+        raise Exception(f'PAPI Error {papi_errno}: Failed to get event info')
+    return str(info.short_descr, encoding='utf-8')
 
 cdef class PyPAPI_EventSet:
     cdef int event_set
