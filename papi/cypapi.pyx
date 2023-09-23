@@ -3,6 +3,9 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import atexit
 import warnings
 
+cimport posix.dlfcn as dlfcn
+cdef void *libhndl = dlfcn.dlopen('libsde.so', dlfcn.RTLD_LAZY | dlfcn.RTLD_GLOBAL)
+
 from papih cimport *
 
 def pyPAPI_library_init():
