@@ -5,5 +5,5 @@ install:
 	pip install .
 
 clean:
-	rm -rf build/ *.egg-info/
+	rm -rf *.so build/ *.egg-info/
 	make -C papi clean

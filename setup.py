@@ -1,48 +1,47 @@
 from setuptools import setup, Extension
 import os
 
-def config_PAPI_PATH_var(ext: Extension):
-    papi_path = os.environ.get('PAPI_PATH')
-    if papi_path is None:
-        return None
-    papi_inc = os.path.join(papi_path, 'include')
-    papi_lib = os.path.join(papi_path, 'lib')
-    ext.include_dirs.append(papi_inc)
-    ext.library_dirs.append(papi_lib)
-    return papi_lib
-
-def config_pkgconfig(ext: Extension):
+def get_papi_path_pkg_config():
     import pkgconfig
     try:
-        pkgconfig.configure_extension(ext, 'papi')
+        papi_path = pkgconfig.variables('papi')['prefix']
     except pkgconfig.pkgconfig.PackageNotFoundError:
-        return None
-    papi_lib = pkgconfig.variables('papi')['libdir']
-    return papi_lib
+        papi_path = None
+    return papi_path
 
-def config_LIBRARY_PATH(ext: Extension):
-    lib_path = os.environ.get('LIBRARY_PATH')
-    if lib_path is None:
+def get_papi_path_env_var(path_var: str):
+    lib_path = os.environ.get(path_var)
+    if not lib_path:
         return None
-    lib_paths = lib_path.split(':')
-    for path in lib_paths:
+    for path in lib_path.split(':'):
         if any(['libpapi' in item for item in os.listdir(path)]):
-            papi_lib = path
-            return papi_lib
+            return os.path.dirname(path)
 
+def configure_extension(ext: Extension, papi_path: str):
+    papi_inc = os.path.join(papi_path, 'include')
+    papi_lib = os.path.join(papi_path, 'lib')
 
-ext = Extension('cypapi', sources=['papi/cypapi.pyx'], libraries=['papi'])
-
-papi_lib = config_PAPI_PATH_var(ext)
-
-if not papi_lib:
-    papi_lib = config_pkgconfig(ext)
-
-if not papi_lib:
-    papi_lib = config_LIBRARY_PATH(ext)
-
-if os.name != 'nt' and papi_lib:
+    ext.include_dirs.append(papi_inc)
+    ext.library_dirs.append(papi_lib)
     ext.runtime_library_dirs.append(papi_lib)
+
+if os.name == 'nt':
+    raise NotImplementedError('cypapi does not currently support Windows OS')
+
+ext_papi = Extension('cypapi', sources=['papi/cypapi.pyx'], libraries=['papi'])
+ext_sde = Extension('cysdelib', sources=['papi/cysdelib.pyx'], libraries=['papi', 'sde'])
+
+papi_path = os.environ.get('PAPI_PATH')
+if not papi_path:
+    papi_path = get_papi_path_pkg_config()
+if not papi_path:
+    papi_path = get_papi_path_env_var('LIBRARY_PATH')
+if not papi_path:
+    papi_path = get_papi_path_env_var('LD_LIBRARY_PATH')
+
+if papi_path:
+    configure_extension(ext_papi, papi_path)
+    configure_extension(ext_sde, papi_path)
 
 setup(
     name = "cypapi",
@@ -50,5 +49,5 @@ setup(
     description = 'Python interface for the PAPI performance monitoring library',
     author = 'Anustuv Pal',
     author_email = 'anustuv@gmail.com',
-    ext_modules = ([ext]),
+    ext_modules = [ext_papi, ext_sde],
 )

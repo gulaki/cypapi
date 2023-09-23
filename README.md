@@ -6,7 +6,7 @@ The Performance Application Programming Interface ([PAPI](https://icl.utk.edu/pa
 
 ## What is cyPAPI?
 
-`cyPAPI` provides a convenient interface for Python programs to access PAPI profiling features with minimum overhead.
+`cyPAPI` provides a convenient interface for Python programs to access PAPI profiling features with minimum overhead. It supports PAPI version >= 7.0.0.0
 
 ## Installation
 
@@ -20,6 +20,7 @@ Currently `cyPAPI` supports installation from source. From the source root execu
     - First checks if user has set `PAPI_PATH` environment variable pointing to the location of PAPI installation
     - Then it checks if pkg-config utility can locate PAPI installation
     - Then it relies on `C_INCLUDE_PATHS` & `LIBRARY_PATHS` to be used by compiler
+    - It also looks for papi library in `LD_LIBRARY_PATH`
     - Lastly it expects that PAPI is installed in default OS installation paths
 
 ## Usage
