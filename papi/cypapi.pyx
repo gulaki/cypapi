@@ -218,7 +218,7 @@ cdef class PyPAPI_EventSet:
         if papi_errno != PAPI_OK:
             raise Exception(f'PAPI_Error {papi_errno}: Failed to cleanup eventset.')
 
-    def __dealloc__(self):
+    def __del__(self):
         self.cleanup()
         cdef papi_errno = PAPI_destroy_eventset(&self.event_set)
         if papi_errno != PAPI_OK:
