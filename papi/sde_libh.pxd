@@ -40,3 +40,13 @@ cdef extern from 'sde_lib.h':
         uint32_t group_flags
     )
     cdef void *papi_sde_get_counter_handle(papi_handle_t handle, const char *event_name)
+
+    ctypedef long long int (*papi_sde_fptr_t)( void * );
+    cdef int papi_sde_register_counter_cb(
+        papi_handle_t handle,
+        const char *event_name,
+        int cntr_mode,
+        int cntr_type,
+        papi_sde_fptr_t callback,
+        void *param
+    )

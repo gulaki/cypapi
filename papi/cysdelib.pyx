@@ -2,6 +2,16 @@
 cimport posix.dlfcn as dlfcn
 cdef void *libhndl = dlfcn.dlopen('libpapi.so', dlfcn.RTLD_LAZY | dlfcn.RTLD_GLOBAL)
 
+import struct
+
+def pack_float_i64(float value):
+    """A utility function to pack the bits of a float value into an int."""
+    return struct.unpack('q', struct.pack('d', value))[0]
+
+def unpack_i64_float(long long int value):
+    """A utility to unpack the bits of a float packed into a long long int."""
+    return struct.unpack('d', struct.pack('q', value))[0]
+
 from sde_libh cimport *
 
 SDE_RO = PAPI_SDE_RO
@@ -59,6 +69,27 @@ class SdeCounter:
     def value(self, value):
         self._counter.value = value
 
+cdef long long int cb_caller(void *py_cb):
+    try:
+        func = <object> py_cb;
+        return <long long int> func();
+    except:
+        return -1
+
+class SdeCounterCB:
+    def __init__(self, event_name: str, cntr_mode: int, cntr_type: int, func):
+        cdef int _type
+        self._name = event_name
+        if issubclass(cntr_type, int):
+            _type = PAPI_SDE_long_long
+        elif issubclass(cntr_type, float):
+            _type = PAPI_SDE_double
+        else:
+            raise Exception("SDE Error: Unsupported type of counter requested.")
+        
+        self._counter = _cSdeCounter(cntr_mode, _type)
+        self._pyfunc = func
+
 cdef class _cSdeHandle:
     cdef papi_handle_t handle
     cdef bytes library_name_cstr
@@ -92,6 +123,16 @@ cdef class _cSdeHandle:
             )
         if sde_err != SDE_OK:
             raise Exception('SDE Error: papi_sde_register_counter failed.')
+
+    def register_counter_cb(self, str event_name, _cSdeCounter counter, py_func):
+        cdef bytes evt_name = event_name.encode('utf-8')
+        cdef int sde_err = papi_sde_register_counter_cb(
+            self.handle, <const char *> evt_name,
+            counter.cntr_mode, counter.cntr_type,
+            cb_caller, <void *> py_func
+        )
+        if sde_err != SDE_OK:
+            raise Exception('SDE Error: papi_sde_register_counter_cb failed.')
 
     def describe_counter(self, str event_name, str description):
         cdef bytes evt_name = event_name.encode('utf-8')
@@ -131,13 +172,12 @@ class SdeHandle:
     def __del__(self):
         self._handle.shutdown()
 
-    def register_counter(self, counter: SdeCounter):
-        self._handle.register_counter(counter._name, counter._counter)
+    def register_counter(self, counter):
+        if isinstance(counter, SdeCounter):
+            self._handle.register_counter(counter._name, counter._counter)
+        elif isinstance(counter, SdeCounterCB):
+            self._handle.register_counter_cb(counter._name, counter._counter, counter._pyfunc)
         self._registered_counters[counter._name] = counter
-
-    def register_callback(self, event_name: str):
-        # Todo: Implement this to have Python functions as callback
-        pass
 
     def describe_counter(self, event_name, description):
         self._handle.describe_counter(event_name, description)
