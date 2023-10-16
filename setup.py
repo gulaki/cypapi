@@ -30,6 +30,7 @@ if os.name == 'nt':
 
 ext_papi = Extension('cypapi', sources=['papi/cypapi.pyx'], libraries=['papi'])
 ext_sde = Extension('cysdelib', sources=['papi/cysdelib.pyx'], libraries=['papi', 'sde'])
+ext_papi_thr = Extension('cypapithr', sources=['papi/threadsampler.pyx'], libraries=['papi'])
 
 papi_path = os.environ.get('PAPI_PATH')
 if not papi_path:
@@ -42,6 +43,7 @@ if not papi_path:
 if papi_path:
     configure_extension(ext_papi, papi_path)
     configure_extension(ext_sde, papi_path)
+    configure_extension(ext_papi_thr, papi_path)
 
 setup(
     name = "cypapi",
@@ -49,5 +51,5 @@ setup(
     description = 'Python interface for the PAPI performance monitoring library',
     author = 'Anustuv Pal',
     author_email = 'anustuv@gmail.com',
-    ext_modules = [ext_papi, ext_sde],
+    ext_modules = [ext_papi, ext_sde, ext_papi_thr],
 )

@@ -213,6 +213,9 @@ cdef class PyPAPI_EventSet:
     def __str__(self):
         return f'PAPI Event set {self.event_set}'
 
+    def get_id(self):
+        return self.event_set
+
     def cleanup(self):
         cdef papi_errno = PAPI_cleanup_eventset(self.event_set)
         if papi_errno != PAPI_OK:
