@@ -14,4 +14,10 @@ sampler = ThreadSamplerEventSet(evt_set, interval_ms=20)
 sampler.start()
 time.sleep(0.4)
 data = sampler.stop()
+
+time.sleep(5)
+sampler.start()
+time.sleep(0.4)
+data = sampler.stop()
+data[:, 0] = data[:, 0] - data[0, 0]
 print(data)

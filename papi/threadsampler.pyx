@@ -44,7 +44,7 @@ cdef class ThreadSamplerEventSet:
         self.num_events = eventset.num_events()
 
         self.interval_ms = interval_ms
-        self.thread = threading.Thread(target=self.run)
+        self.thread = None
         self.stop_event = 0
         self.values = <long long *> malloc(self.num_events * sizeof(long long))
         self.__init_arr__()
@@ -78,11 +78,12 @@ cdef class ThreadSamplerEventSet:
         self.counter += 1
 
     def start(self):
+        self.stop_event = 0
+        self.thread = threading.Thread(target=self.run)
         self.thread.start()
 
     cpdef run(self):
         cdef long long cyc = -1
-        cdef int i
         cdef int papi_errno = PAPI_register_thread()
         if papi_errno != PAPI_OK:
             raise Exception('PAPI Error: PAPI_register thread failed.')
@@ -116,6 +117,7 @@ cdef class ThreadSamplerEventSet:
     def stop(self):
         self.stop_event = 1
         self.thread.join()
+        self.thread = None
         return self.__get_data_array__()
 
     def __get_data_array__(self):
