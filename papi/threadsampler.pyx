@@ -78,6 +78,11 @@ cdef class ThreadSamplerEventSet:
         self.counter += 1
 
     def start(self):
+        if self.thread is not None and self.thread.is_alive():
+            self.stop_event = 1
+            self.thread.join()
+            raise Exception('Thread already running.')
+
         self.stop_event = 0
         self.thread = threading.Thread(target=self.run)
         self.thread.start()
@@ -130,3 +135,6 @@ cdef class ThreadSamplerEventSet:
                 np_data[i, j] = self.data[i][j]
 
         return np_data
+
+    def reset(self):
+        self.counter = 0

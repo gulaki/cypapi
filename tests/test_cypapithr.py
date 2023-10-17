@@ -14,6 +14,8 @@ sampler = ThreadSamplerEventSet(evt_set, interval_ms=20)
 sampler.start()
 time.sleep(0.4)
 data = sampler.stop()
+print(data)
+sampler.reset()  # Remove this to measure and append data in series
 
 time.sleep(5)
 sampler.start()
