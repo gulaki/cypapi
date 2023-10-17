@@ -1,5 +1,6 @@
 from setuptools import setup, Extension
 import os
+import numpy
 
 def get_papi_path_pkg_config():
     import pkgconfig
@@ -30,7 +31,7 @@ if os.name == 'nt':
 
 ext_papi = Extension('cypapi', sources=['papi/cypapi.pyx'], libraries=['papi'])
 ext_sde = Extension('cysdelib', sources=['papi/cysdelib.pyx'], libraries=['papi', 'sde'])
-ext_papi_thr = Extension('cypapithr', sources=['papi/threadsampler.pyx'], libraries=['papi'])
+ext_papi_thr = Extension('cypapithr', sources=['papi/threadsampler.pyx'], libraries=['papi'], include_dirs=[numpy.get_include()])
 
 papi_path = os.environ.get('PAPI_PATH')
 if not papi_path:
