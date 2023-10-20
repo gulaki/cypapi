@@ -52,6 +52,10 @@ def pyPAPI_get_virt_nsec():
 def pyPAPI_get_virt_usec():
     return PAPI_get_virt_usec()
 
+def pyPAPI_get_cyc_per_usec() -> int:
+    """Returns the CPU clock speed in cycles per micro sec (same as MHz)."""
+    return PAPI_get_opt(PAPI_CLOCKRATE, NULL)
+
 class PyPAPI_get_component_info:
 
     def __init__(self, int cidx):

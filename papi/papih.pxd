@@ -18,6 +18,8 @@ cdef extern from 'papi.h':
     long long PAPI_get_virt_cyc()
     long long PAPI_get_virt_nsec()
     long long PAPI_get_virt_usec()
+    cdef int PAPI_CLOCKRATE
+    int  PAPI_get_opt(int option, void *ptr)
 
     cdef int PAPI_NATIVE_MASK
     cdef int PAPI_ENUM_FIRST
