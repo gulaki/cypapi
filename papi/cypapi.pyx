@@ -75,7 +75,7 @@ class PyPAPI_get_component_info:
         self.num_cntrs = cmp_info.num_cntrs
         self.num_mpx_cntrs = cmp_info.num_mpx_cntrs
         self.num_preset_events = cmp_info.num_preset_events
-        self.num_native_events = cmp_info.num_preset_events
+        self.num_native_events = cmp_info.num_native_events
         self.default_domain = cmp_info.default_domain
         self.available_domains = cmp_info.available_domains
         self.default_granularity = cmp_info.default_granularity
