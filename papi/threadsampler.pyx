@@ -13,6 +13,7 @@ cdef extern from 'papi.h' nogil:
     int PAPI_thread_init(unsigned long (*id_fn) ())
     int PAPI_register_thread()
     int PAPI_unregister_thread()
+    int PAPI_num_events(int EventSet)
     int PAPI_read_ts(int EventSet, long long * values, long long *cyc)
     int PAPI_start(int EventSet)
     int PAPI_stop(int EventSet, long long * values)
@@ -30,7 +31,6 @@ cdef long int INIT_SIZE = 64
 
 cdef class ThreadSamplerEventSet:
     cdef int evtset_id
-    cdef int num_events
     cdef int interval_ms
     cdef object thread
     cdef int stop_event
@@ -41,12 +41,11 @@ cdef class ThreadSamplerEventSet:
 
     def __cinit__(self, eventset: object, interval_ms: int):
         self.evtset_id = eventset.get_id()
-        self.num_events = eventset.num_events()
 
         self.interval_ms = interval_ms
         self.thread = None
         self.stop_event = 0
-        self.values = <long long *> malloc(self.num_events * sizeof(long long))
+        self.values = <long long *> malloc(PAPI_num_events(self.evtset_id) * sizeof(long long))
         self.__init_arr__()
 
     def __dealloc__(self):
@@ -62,18 +61,18 @@ cdef class ThreadSamplerEventSet:
         self.counter = 0
         cdef long int i
         for i in range(INIT_SIZE):
-            self.data[i] = <long long *> calloc(self.num_events + 1, sizeof(long long))
+            self.data[i] = <long long *> calloc(PAPI_num_events(self.evtset_id) + 1, sizeof(long long))
 
     cdef void record(self, long long cyc, long long *values) nogil:
         cdef long int i
         if self.counter >= self.arrsize:
             self.arrsize *= 2
-            self.data = <long long **> realloc(self.data, self.arrsize * sizeof(long long))
+            self.data = <long long **> realloc(self.data, self.arrsize * sizeof(long long *))
             for i in range(self.counter, self.arrsize):
-                self.data[i] = <long long *> calloc(self.num_events + 1, sizeof(long long))
+                self.data[i] = <long long *> calloc(PAPI_num_events(self.evtset_id) + 1, sizeof(long long))
 
         self.data[self.counter][0] = cyc
-        for i in range(self.num_events):
+        for i in range(PAPI_num_events(self.evtset_id)):
             self.data[self.counter][i+1] = values[i]
         self.counter += 1
 
@@ -97,7 +96,7 @@ cdef class ThreadSamplerEventSet:
         if papi_errno == PAPI_EISRUN:
             warnings.warn('Event set is already running. Ignoring PAPI_start.')
         elif papi_errno != PAPI_OK:
-            raise Exception(f'PAPI Error {papi_errno}: PAPI_Start failed.')
+            raise Exception(f'PAPI Error {papi_errno}: PAPI_start failed.')
 
         with nogil:
             while True:
@@ -127,11 +126,11 @@ cdef class ThreadSamplerEventSet:
 
     def __get_data_array__(self):
         cdef np.ndarray[np.int64_t, ndim=2] np_data
-        np_data = np.zeros((self.counter, self.num_events + 1), dtype=np.int64)
+        np_data = np.zeros((self.counter, PAPI_num_events(self.evtset_id) + 1), dtype=np.int64)
         cdef long int i, j
 
         for i in range(self.counter):
-            for j in range(self.num_events + 1):
+            for j in range(PAPI_num_events(self.evtset_id) + 1):
                 np_data[i, j] = self.data[i][j]
 
         return np_data
