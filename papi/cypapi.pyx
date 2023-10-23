@@ -8,6 +8,16 @@ cdef void *libhndl = dlfcn.dlopen('libsde.so', dlfcn.RTLD_LAZY | dlfcn.RTLD_GLOB
 
 from papih cimport *
 
+PAPI_Error = {
+    'PAPI_OK': PAPI_OK,
+    'PAPI_EINVAL': PAPI_EINVAL,
+    'PAPI_ENOMEM': PAPI_ENOMEM,
+    'PAPI_ENOEVNT': PAPI_ENOEVNT,
+    'PAPI_ENOCMP': PAPI_ENOCMP,
+    'PAPI_EISRUN': PAPI_EISRUN,
+    'PAPI_EDELAYINIT': PAPI_EDELAY_INIT
+}
+
 def pyPAPI_library_init():
     cdef int papi_errno = PAPI_library_init(PAPI_VER_CURRENT)
     if (papi_errno != PAPI_VER_CURRENT):
