@@ -146,6 +146,13 @@ cdef class PyPAPI_enum_preset_events:
     def __next__(self):
         return self.next_event()
 
+cdef void _PAPI_enum_cmp_event(int *EventCode, int modifier, int cidx) except *:
+    cdef int papi_errno = PAPI_enum_cmp_event(EventCode, modifier, cidx)
+    if papi_errno == PAPI_ENOCMP:
+        raise Exception(f'PAPI Error {papi_errno}: PAPI_enum_cmp_event failed.')
+    if papi_errno == PAPI_ENOEVNT or papi_errno == PAPI_EINVAL:
+        raise StopIteration
+
 cdef class PyPAPI_enum_component_events:
     cdef int ntv_code
     cdef int cidx
@@ -155,22 +162,17 @@ cdef class PyPAPI_enum_component_events:
         self.cidx = cidx
         self.modifier = PAPI_ENUM_FIRST
         self.ntv_code = 0 | PAPI_NATIVE_MASK
-        self.next_event()
     
     def next_event(self):
-        cdef int papi_errno
         if self.modifier == PAPI_ENUM_FIRST:
-            papi_errno = PAPI_enum_cmp_event(&self.ntv_code, PAPI_ENUM_FIRST, self.cidx)
-            if papi_errno != PAPI_OK:
-                raise Exception('PAPI Error {papi_errno}: Failed to enumerate component event')
+            _PAPI_enum_cmp_event(&self.ntv_code, PAPI_ENUM_FIRST, self.cidx)
             self.modifier = PAPI_ENUM_EVENTS
             return self.ntv_code
-        papi_errno = PAPI_enum_cmp_event(&self.ntv_code, PAPI_ENUM_EVENTS, self.cidx)
-        if papi_errno != PAPI_OK:
-            raise StopIteration
+        _PAPI_enum_cmp_event(&self.ntv_code, PAPI_ENUM_EVENTS, self.cidx)
         return self.ntv_code
 
     def __iter__(self):
+        self.next_event()
         return self
 
     def __next__(self):
