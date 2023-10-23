@@ -7,3 +7,6 @@ install:
 clean:
 	rm -rf *.so build/ *.egg-info/
 	make -C papi clean
+
+docs:
+	sphinx-build -M html docs/source/ docs/build/
