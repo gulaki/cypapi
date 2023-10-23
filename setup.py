@@ -53,4 +53,7 @@ setup(
     author = 'Anustuv Pal',
     author_email = 'anustuv@gmail.com',
     ext_modules = [ext_papi, ext_sde, ext_papi_thr],
+    packages=[
+        'papi'
+    ]
 )
