@@ -1,7 +1,9 @@
 # cython: language_level=3
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import atexit
 import warnings
+import numpy as np
+cimport numpy as np
 
 cimport posix.dlfcn as dlfcn
 cdef void *libhndl = dlfcn.dlopen('libsde.so', dlfcn.RTLD_LAZY | dlfcn.RTLD_GLOBAL)
@@ -366,5 +368,81 @@ cdef class PyPAPI_EventSet:
         if cid < 0:
             raise Exception(f'PAPI Error {cid}: Failed to get eventset component index')
         return cid
+
+cdef int INIT_SIZE = 64
+
+cdef class EventSetCollector:
+    cdef int evtset_id
+    cdef long long *values
+    cdef long int counter
+    cdef long int arrsize
+    cdef long long **data
+
+    def __cinit__(self, eventset: object):
+        self.evtset_id = eventset.get_id()
+
+        self.values = <long long *> PyMem_Malloc(PAPI_num_events(self.evtset_id) * sizeof(long long))
+        self.__init_arr__()
+
+    def __init_arr__(self):
+        self.data = <long long **> PyMem_Malloc(INIT_SIZE * sizeof(long long *))
+        self.arrsize = INIT_SIZE
+        self.counter = 0
+        cdef long int i
+        for i in range(INIT_SIZE):
+            self.data[i] = <long long *> PyMem_Malloc((PAPI_num_events(self.evtset_id) + 1) * sizeof(long long))
+
+    def __dealloc__(self):
+        PyMem_Free(self.values)
+        cdef long int i
+        for i in range(self.arrsize):
+            PyMem_Free(self.data[i])
+        PyMem_Free(self.data)
+
+    def start(self):
+        cdef int papi_errno
+
+        papi_errno = PAPI_start(self.evtset_id)
+        if papi_errno == PAPI_EISRUN:
+            warnings.warn('Event set is already running. Ignoring PAPI_start.')
+        elif papi_errno != PAPI_OK:
+            raise Exception(f'PAPI Error {papi_errno}: PAPI_start failed.')
+
+    cdef void record(self, long long cyc, long long *values):
+        cdef long int i
+        if self.counter >= self.arrsize:
+            self.arrsize *= 2
+            self.data = <long long **> PyMem_Realloc(self.data, self.arrsize * sizeof(long long *))
+            for i in range(self.counter, self.arrsize):
+                self.data[i] = <long long *> PyMem_Malloc((PAPI_num_events(self.evtset_id) + 1) * sizeof(long long))
+
+        self.data[self.counter][0] = cyc
+        for i in range(PAPI_num_events(self.evtset_id)):
+            self.data[self.counter][i+1] = values[i]
+        self.counter += 1
+
+    def read(self):
+        cdef long long cyc = -1
+        cdef int papi_errno = PAPI_read_ts(self.evtset_id, self.values, &cyc)
+        if papi_errno != PAPI_OK:
+            raise Exception(f'PAPI Error {papi_errno}: PAPI_read_ts failed.')
+        self.record(cyc, self.values)
+
+    def stop(self):
+        cdef long long cyc = PAPI_get_real_cyc()
+        cdef int papi_errno = PAPI_stop(self.evtset_id, self.values)
+        self.record(cyc, self.values)
+        return self.__get_data_array__()
+
+    cdef object __get_data_array__(self):
+        cdef np.ndarray[np.int64_t, ndim=2] np_data
+        np_data = np.zeros((self.counter, PAPI_num_events(self.evtset_id) + 1), dtype=np.int64)
+        cdef long int i, j
+
+        for i in range(self.counter):
+            for j in range(PAPI_num_events(self.evtset_id) + 1):
+                np_data[i, j] = self.data[i][j]
+
+        return np_data
 
 del atexit, warnings
