@@ -125,7 +125,6 @@ cdef class PyPAPI_enum_preset_events:
         else:
             raise Exception(f'cyPAPI Error: Invalid option "{modifier}" for preset enumeration')
         self.ntv_code = 0 | PAPI_PRESET_MASK
-        self.next_event()
 
     def next_event(self):
         cdef int papi_errno
@@ -141,6 +140,7 @@ cdef class PyPAPI_enum_preset_events:
         return self.ntv_code
 
     def __iter__(self):
+        self.next_event()
         return self
 
     def __next__(self):
