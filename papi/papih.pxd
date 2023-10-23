@@ -28,8 +28,14 @@ cdef extern from 'papi.h':
     cdef int PAPI_MIN_STR_LEN
     cdef int PAPI_HUGE_STR_LEN
     cdef int PAPI_PMU_MAX
+
     cdef int PAPI_OK
+    cdef int PAPI_EINVAL
     cdef int PAPI_ENOMEM
+    cdef int PAPI_ENOEVNT
+    cdef int PAPI_ENOCMP
+    cdef int PAPI_EISRUN
+    cdef int PAPI_EDELAY_INIT
 
     ctypedef struct PAPI_component_info_t:
         char* name                # Name of the component we're using
