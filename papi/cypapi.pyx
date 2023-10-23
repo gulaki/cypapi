@@ -140,7 +140,6 @@ cdef class PyPAPI_enum_preset_events:
         return self.ntv_code
 
     def __iter__(self):
-        self.next_event()
         return self
 
     def __next__(self):
@@ -172,7 +171,6 @@ cdef class PyPAPI_enum_component_events:
         return self.ntv_code
 
     def __iter__(self):
-        self.next_event()
         return self
 
     def __next__(self):
