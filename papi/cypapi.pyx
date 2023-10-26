@@ -22,8 +22,8 @@ PAPI_Error = {
 
 def pyPAPI_library_init():
     cdef int papi_errno = PAPI_library_init(PAPI_VER_CURRENT)
-    if (papi_errno != PAPI_VER_CURRENT):
-        raise Exception('Failed to initialize PAPI_Library')
+    if papi_errno != PAPI_VER_CURRENT:
+        raise Exception('PAPI Error: Failed to initialize PAPI_Library')
 
 def pyPAPI_get_version_string():
     ver = f'{PAPI_VERSION_MAJOR(PAPI_VERSION)}.{PAPI_VERSION_MINOR(PAPI_VERSION)}.{PAPI_VERSION_REVISION(PAPI_VERSION)}.{PAPI_VERSION_INCREMENT(PAPI_VERSION)}'
