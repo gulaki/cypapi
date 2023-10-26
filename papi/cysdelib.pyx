@@ -69,7 +69,7 @@ class SdeCounter:
     def value(self, value):
         self._counter.value = value
 
-cdef long long int cb_caller(void *py_cb):
+cdef long long int cb_caller(void *py_cb) noexcept:
     try:
         func = <object> py_cb;
         return <long long int> func();

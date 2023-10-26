@@ -18,7 +18,7 @@ cdef extern from 'papi.h' nogil:
     int PAPI_start(int EventSet)
     int PAPI_stop(int EventSet, long long * values)
 
-cdef unsigned long get_thread_id() nogil:
+cdef unsigned long get_thread_id() noexcept nogil:
     with gil:
         return threading.get_native_id()
 
